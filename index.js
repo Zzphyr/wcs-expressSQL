@@ -10,6 +10,32 @@ app.use(bodyParser.urlencoded({
 }));
 
 
+// GET - Ordered data recovery (i.e. ascending, descending) - The order should be passed as a route parameter
+// this has to be either on top (workaround) or build inside another route that also uses /api/icecream
+// use http://localhost:3000/api/icecream?field=name&order=desc
+app.get('/api/icecream', (req, res) => {
+   const dataField = req.query.field;
+   const dataOrder = req.query.order;
+   console.log("hello", req.query.order)
+   let q = '';
+   if (dataOrder === "asc") {
+      q = `SELECT * from icecream order by ?? asc`
+   } else if (dataOrder === "desc") {
+      q = `SELECT * from icecream order by ?? desc`
+   } else {
+      q = `SELECT * from icecream`
+   }
+   //const q = `SELECT * from icecream order by ?? `;
+   connection.query(q, dataField, (err, results) => {
+      if (err) {
+         res.status(500).send('Error retrieving list of ice creams');
+      } else {
+         res.json(results);
+      }
+   });
+});
+
+
 // GET - Retrieve all of the data from your table
 app.get('/api/icecream', (req, res) => {
    connection.query('SELECT * from icecream', (err, results) => {
@@ -35,8 +61,9 @@ app.get('/api/icecream/names', (req, res) => {
 // GET - Retrieve a data set with the following filters (use one route per filter type):
 // A filter for data that contains... (e.g. name containing the string 'wcs')
 app.get('/api/icecream/contain', (req, res) => {
-   const q = 'SELECT * from icecream where name like "%Chocolate%"';
-   connection.query(q, (err, results) => {
+   const data = req.query.data;
+   const q = "SELECT * from icecream where name like ? ";
+   connection.query(q, '%' + data + '%', (err, results) => {
       if (err) {
          res.status(500).send('Error retrieving list of icecreams containing chocolate');
       } else {
@@ -47,8 +74,9 @@ app.get('/api/icecream/contain', (req, res) => {
 
 // A filter for data that starts with... (e.g. name beginning with 'campus')
 app.get('/api/icecream/start', (req, res) => {
-   const q = 'SELECT * from icecream where name like "Chocolate%"';
-   connection.query(q, (err, results) => {
+   const data = req.query.data;
+   const q = 'SELECT * from icecream where name like ?';
+   connection.query(q, data + '%', (err, results) => {
       if (err) {
          res.status(500).send('Error retrieving list of ice creams starting with chocolate');
       } else {
@@ -58,25 +86,12 @@ app.get('/api/icecream/start', (req, res) => {
 });
 
 // A filter for data that is greater than... (e.g. date greater than 18/10/2010)
-app.get('/api/icecream/greater', (req, res) => {
-   const q = 'SELECT name, entry_date from icecream where entry_date > "2017-07-04"';
-   connection.query(q, (err, results) => {
+app.get('/api/icecream/dategreater', (req, res) => {
+   const data = req.query.data;
+   const q = 'SELECT name, entry_date from icecream where entry_date > ?';
+   connection.query(q, data, (err, results) => {
       if (err) {
          res.status(500).send('Error retrieving list of ice creams with entry date greater than 2017-07-04');
-      } else {
-         res.json(results);
-      }
-   });
-});
-
-// GET - Ordered data recovery (i.e. ascending, descending) - The order should be passed as a route parameter
-// use http://localhost:3000/api/icecream/name/desc
-app.get('/api/icecream/:field/:order', (req, res) => {
-   //const dataOrder = req.params.order;
-   const q = `SELECT * from icecream order by ${req.params.field} ${req.params.order}`;
-   connection.query(q, (err, results) => {
-      if (err) {
-         res.status(500).send('Error retrieving list of ice creams');
       } else {
          res.json(results);
       }
